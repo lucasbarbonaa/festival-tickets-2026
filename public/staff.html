@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Acceso | Zapucay Patio Criollo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #fbbf24;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #05070a;
+            --card: #111827;
+            --text: #ffffff;
+            --muted: #94a3b8;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        h1 {
+            color: var(--primary);
+            font-weight: 900;
+            margin: 0;
+        }
+        .logout-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 14px;
+            background: var(--card);
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: black;
+            border-color: var(--primary);
+        }
+        #reader {
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .manual-section {
+            background: var(--card);
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid #1f2937;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        .btn-check {
+            width: 100%;
+            background: var(--primary);
+            color: black;
+            border: none;
+            padding: 16px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            border-radius: 999px;
+            cursor: pointer;
+        }
+        #resultBox {
+            margin-top: 32px;
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .status-valid   { background: rgba(16,185,129,0.15); border: 2px solid var(--success); color: var(--success); }
+        .status-used     { background: rgba(239,68,68,0.15);  border: 2px solid var(--danger);  color: var(--danger); }
+        .status-pending  { background: rgba(251,191,36,0.15); border: 2px solid var(--warning); color: var(--warning); }
+        .status-invalid  { background: rgba(239,68,68,0.15);  border: 2px solid var(--danger);  color: var(--danger); }
+        .attendee-name {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin: 16px 0;
+        }
+        .ticket-info {
+            font-size: 1.2rem;
+            margin: 12px 0;
+            color: var(--muted);
+        }
+        #btnIn {
+            background: var(--success);
+            color: black;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            border-radius: 999px;
+            margin-top: 24px;
+            cursor: pointer;
+        }
+        #btnIn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Control de Acceso</h1>
+            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('qr')">Escanear QR</button>
+            <button class="tab-btn" onclick="showTab('manual')">Buscar por DNI</button>
+        </div>
+
+        <div id="qrSection">
+            <div id="reader"></div>
+        </div>
+
+        <div id="manualSection" style="display:none;">
+            <div class="manual-section">
+                <label for="dniInput">Ingresar DNI manualmente</label>
+                <input type="text" id="dniInput" placeholder="Ej: 30123456" autocomplete="off">
+                <button class="btn-check" onclick="checkByDni()">Verificar Entrada</button>
+            </div>
+        </div>
+
+        <div id="resultBox" style="display:none;">
+            <div id="statusBadge" class="status-invalid">
+                <h2 id="statusText">—</h2>
+            </div>
+            <div class="attendee-name" id="clientName">—</div>
+            <div class="ticket-info" id="ticketInfo">—</div>
+
+            <button id="btnIn" style="display:none;" onclick="markEntry()">
+                MARCAR INGRESO
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/login.html';
+
+        let currentTicketId = null;
+        let html5QrCode = null;
+
+        function showTab(tab) {
+            document.getElementById('qrSection').style.display = tab === 'qr' ? 'block' : 'none';
+            document.getElementById('manualSection').style.display = tab === 'manual' ? 'block' : 'none';
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (tab === 'qr') startScanner();
+            else if (html5QrCode) html5QrCode.stop();
+        }
+
+        function startScanner() {
+            const reader = document.getElementById('reader');
+            html5QrCode = new Html5Qrcode("reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 280, height: 280 } },
+                (decodedText) => {
+                    processTicket(decodedText);
+                    html5QrCode.stop();
+                },
+                (error) => { /* silent */ }
+            ).catch(err => console.warn("Error iniciando cámara:", err));
+        }
+
+        async function processTicket(query) {
+            document.getElementById('resultBox').style.display = 'block';
+            document.getElementById('statusBadge').className = 'status-invalid';
+            document.getElementById('statusText').textContent = 'Verificando...';
+            document.getElementById('clientName').textContent = '—';
+            document.getElementById('ticketInfo').textContent = '—';
+            document.getElementById('btnIn').style.display = 'none';
+
+            try {
+                const res = await fetch(`/api/staff/check/${encodeURIComponent(query)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const ticket = await res.json();
+
+                if (!res.ok) throw new Error(ticket.error || 'Ticket no encontrado');
+
+                currentTicketId = ticket.id;
+
+                document.getElementById('clientName').textContent = ticket.fullName;
+                document.getElementById('ticketInfo').textContent = `Tanda: ${ticket.batchName} | DNI: ${ticket.dni}`;
+
+                const badge = document.getElementById('statusBadge');
+                const statusText = document.getElementById('statusText');
+                const btnIn = document.getElementById('btnIn');
+
+                badge.className = 'status-' + ticket.status;
+                btnIn.style.display = 'none';
+
+                if (ticket.status === 'valid') {
+                    statusText.textContent = 'ENTRADA VÁLIDA';
+                    badge.classList.add('valid');
+                    btnIn.style.display = 'block';
+                } else if (ticket.status === 'used') {
+                    statusText.textContent = 'YA INGRESÓ';
+                    badge.classList.add('used');
+                } else if (ticket.status === 'pending') {
+                    statusText.textContent = 'PAGO PENDIENTE';
+                    badge.classList.add('pending');
+                } else {
+                    statusText.textContent = 'ENTRADA NO VÁLIDA';
+                    badge.classList.add('invalid');
+                }
+
+            } catch (err) {
+                document.getElementById('statusText').textContent = 'ERROR';
+                document.getElementById('statusBadge').className = 'status-invalid';
+                alert("Error: " + (err.message || 'No se pudo verificar el ticket'));
+            }
+        }
+
+        async function checkByDni() {
+            const dni = document.getElementById('dniInput').value.trim();
+            if (!dni) return alert('Ingresa un DNI válido');
+            processTicket(dni);
+        }
+
+        async function markEntry() {
+            if (!currentTicketId) return;
+            if (!confirm("¿Confirmar ingreso del asistente?")) return;
+
+            try {
+                const res = await fetch(`/api/staff/use-ticket/${currentTicketId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    alert("¡Ingreso registrado exitosamente!");
+                    document.getElementById('resultBox').style.display = 'none';
+                    document.getElementById('statusText').textContent = 'INGRESO MARCADO';
+                    document.getElementById('btnIn').style.display = 'none';
+
+                    if (document.getElementById('qrSection').style.display === 'block') {
+                        startScanner();
+                    }
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al registrar ingreso');
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login.html';
+        }
+
+        // Iniciar con lector QR por defecto
+        window.onload = () => {
+            showTab('qr');
+        };
+    </script>
+</body>
+</html>

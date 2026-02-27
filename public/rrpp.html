@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel RRPP | Zapucay Patio Criollo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #00ff88;
+            --bg: #05070a;
+            --card: #111827;
+            --text: #ffffff;
+            --muted: #94a3b8;
+            --danger: #ef4444;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        h1 {
+            color: var(--primary);
+            font-weight: 900;
+            margin: 0;
+        }
+        .logout-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid #1f2937;
+        }
+        .big-number {
+            font-size: 3.2rem;
+            font-weight: 900;
+            color: var(--success);
+            margin: 8px 0;
+        }
+        .label {
+            color: var(--muted);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .ref-box {
+            background: rgba(59,130,246,0.1);
+            border: 2px dashed var(--primary);
+            padding: 24px;
+            border-radius: 16px;
+            margin: 32px 0;
+        }
+        .ref-link {
+            background: #0f172a;
+            padding: 14px;
+            border-radius: 12px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 16px 0;
+            font-size: 1.1rem;
+        }
+        .btn-copy {
+            background: var(--primary);
+            color: black;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 999px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        form {
+            background: var(--card);
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid #1f2937;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        .btn-submit {
+            width: 100%;
+            background: var(--success);
+            color: black;
+            border: none;
+            padding: 18px;
+            font-size: 1.3rem;
+            font-weight: 900;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #1f2937;
+        }
+        th {
+            color: var(--muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+        .status-valid { color: var(--success); font-weight: bold; }
+        .status-used  { color: var(--muted); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Panel RRPP</h1>
+            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <div class="label">Entradas Vendidas</div>
+                <div class="big-number" id="totalTickets">0</div>
+            </div>
+            <div class="card">
+                <div class="label">Ingresos Generados</div>
+                <div class="big-number" id="totalRevenue">$0</div>
+            </div>
+        </div>
+
+        <div class="ref-box">
+            <h2>Tu Link de Referido</h2>
+            <p>Comparte este link para que tus ventas se registren automáticamente a tu nombre:</p>
+            <div class="ref-link" id="refLink"></div>
+            <button class="btn-copy" onclick="copyLink()">Copiar Link</button>
+        </div>
+        <!--
+        <form id="sellForm">
+            <h2>Registrar Venta Directa (Efectivo / Transferencia)</h2>
+            <label for="custName">Nombre completo del comprador</label>
+            <input type="text" id="custName" required placeholder="Ej: María López">
+
+            <label for="custDni">DNI</label>
+            <input type="text" id="custDni" required placeholder="Ej: 30123456">
+
+            <label for="custEmail">Email (opcional - para enviar entrada digital)</label>
+            <input type="email" id="custEmail" placeholder="maria@ejemplo.com">
+
+            <label for="custWhatsapp">WhatsApp (opcional)</label>
+            <input type="tel" id="custWhatsapp" placeholder="543735579785">
+
+            <label for="quantity">Cantidad de entradas</label>
+            <input type="number" id="quantity" min="1" max="10" value="1" required>
+
+            <button type="submit" class="btn-submit" id="btnSubmit">EMITIR TICKET(S) VÁLIDO(S)</button>
+        </form>
+        -->
+
+        <h2 style="margin: 48px 0 16px 0;">Tus Ventas Registradas</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>DNI</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="salesList"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/login.html';
+
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const username = user.username || 'tuusuario';
+
+        // Construir link de referido
+        const baseUrl = window.location.origin;
+        document.getElementById('refLink').textContent = `${baseUrl}/?ref=${username}`;
+
+        async function apiFetch(url, options = {}) {
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+            const res = await fetch(url, options);
+            if (res.status === 401 || res.status === 403) logout();
+            return res.json();
+        }
+
+        async function loadDashboard() {
+            const data = await apiFetch('/api/rrpp/stats');
+
+            document.getElementById('totalTickets').textContent = data.totalTickets || 0;
+            document.getElementById('totalRevenue').textContent = 
+                `$${Math.round(data.totalRevenue || 0).toLocaleString('es-AR')}`;
+
+            const tbody = document.getElementById('salesList');
+            if (data.sales?.length > 0) {
+                tbody.innerHTML = data.sales.map(s => `
+                    <tr>
+                        <td>${s.fullName}</td>
+                        <td>${s.dni}</td>
+                        <td>${s.createdAt ? new Date(s.createdAt).toLocaleDateString('es-AR') : '—'}</td>
+                        <td class="status-${s.status}">${s.status.toUpperCase()}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Aún no tienes ventas registradas</td></tr>';
+            }
+        }
+        
+        
+        //document.getElementById('sellForm').addEventListener('submit', async (e) => {//
+            //e.preventDefault();
+           // const btn = document.getElementById('btnSubmit');
+           // btn.disabled = true;
+            //btn.textContent = 'Procesando...';
+
+            //const payload = {
+                //fullName: document.getElementById('custName').value.trim(),
+                //dni: document.getElementById('custDni').value.trim(),
+                //email: document.getElementById('custEmail').value.trim() || null,
+                //whatsapp: document.getElementById('custWhatsapp').value.trim() || null,
+                //quantity: parseInt(document.getElementById('quantity').value) || 1
+            //};
+
+            //try {
+                //const res = await apiFetch('/api/rrpp/sell', {
+                    //method: 'POST',
+                    //body: JSON.stringify(payload)
+                //});
+
+                //if (res.success) {
+                    //alert(`¡Venta registrada! ${payload.quantity} ticket(s) creado(s)`);
+                    //document.getElementById('sellForm').reset();
+                    //loadDashboard();
+                //} else {
+                    //alert(res.error || 'No se pudo registrar la venta');
+                //}
+            //} catch (err) {
+                //alert('Error de conexión. Intenta nuevamente.');
+            //} finally {
+                //btn.disabled = false;
+                //btn.textContent = 'EMITIR TICKET(S) VÁLIDO(S)';
+            //}
+        //});
+        
+        
+
+        function copyLink() {
+            const link = document.getElementById('refLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link de referido copiado al portapapeles');
+            });
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login.html';
+        }
+
+        // Carga inicial
+        window.onload = loadDashboard;
+    </script>
+</body>
+</html>
