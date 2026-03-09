@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Entrada | Zapucay Patio Criollo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --bg: #05070a;
+            --card: #111827;
+            --text: #ffffff;
+            --muted: #94a3b8;
+            --danger: #ef4444;
+            --warning: #fbbf24;
+            --success: #10b981;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+        }
+        h1 {
+            color: var(--primary);
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .ticket {
+            background: var(--card);
+            border-radius: 24px;
+            border: 2px solid rgba(0,255,136,0.2);
+            padding: 32px 24px;
+            margin: 24px 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            display: none;
+        }
+        .header {
+            background: var(--primary);
+            color: black;
+            padding: 20px;
+            border-radius: 16px 16px 0 0;
+            margin: -32px -24px 24px -24px;
+        }
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin: 24px auto;
+            display: inline-block;
+        }
+        .info {
+            text-align: left;
+            margin-top: 16px;
+            padding-top: 20px;
+            border-top: 1px dashed #334155;
+        }
+        .info p {
+            margin: 12px 0;
+            font-size: 1.1rem;
+        }
+        .info strong {
+            color: var(--primary);
+        }
+        .status-pending  { color: var(--warning); font-weight: bold; font-size: 1.3rem; }
+        .status-valid    { color: var(--success); font-weight: bold; font-size: 1.3rem; }
+        .status-used     { color: var(--danger);   font-weight: bold; font-size: 1.3rem; }
+        .loader {
+            border: 5px solid rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin: 3rem auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-box {
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.4);
+            padding: 24px;
+            border-radius: 16px;
+            margin-top: 2rem;
+            display: none;
+        }
+        .instructions {
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin-top: 2rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="status-container">
+            <div class="loader"></div>
+            <p id="status-text">Cargando tu entrada...</p>
+        </div>
+
+        <div class="ticket" id="ticketUI">
+            <div class="header">
+                <h1>ENTRADA OFICIAL</h1>
+                <p>Zapucay Patio Criollo</p>
+            </div>
+
+            <div class="qr-container" id="qrcode"></div>
+
+            <div class="info">
+                <p><strong>Nombre:</strong> <span id="viewName">—</span></p>
+                <p><strong>DNI:</strong> <span id="viewDni">—</span></p>
+                <p><strong>Tanda:</strong> <span id="viewBatch">—</span></p>
+                <p><strong>Estado:</strong> <span id="viewStatus">—</span></p>
+            </div>
+        </div>
+
+        <div class="error-box" id="errorBox">
+            <h2 style="color: var(--danger);">No pudimos cargar la entrada</h2>
+            <p id="errorDetail"></p>
+            <p style="margin-top: 1.5rem;">
+                Verificá que el link sea correcto o contactá al equipo del festival.
+            </p>
+        </div>
+
+        <div class="instructions">
+            Presentá este código QR junto con tu DNI en la entrada del evento.<br>
+            Guardá esta página o tomale captura de pantalla.
+        </div>
+    </div>
+
+    <script>
+        // ────────────────────────────────────────────────
+        // Obtener ID desde la URL
+        // ────────────────────────────────────────────────
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        // Elementos del DOM (cacheados)
+        const statusContainer = document.getElementById('status-container');
+        const statusText      = document.getElementById('status-text');
+        const errorBox        = document.getElementById('errorBox');
+        const errorDetail     = document.getElementById('errorDetail');
+        const ticketUI        = document.getElementById('ticketUI');
+        const spinner         = document.querySelector('.loader');
+
+        // ────────────────────────────────────────────────
+        // Validación inicial del ID
+        // ────────────────────────────────────────────────
+        if (!id || id.trim() === '') {
+            statusContainer.style.display = 'none';
+            errorBox.style.display = 'block';
+            errorDetail.textContent = 'No se encontró ID de entrada en la URL. Verificá el link que recibiste.';
+        } else {
+            // Si hay ID → cargar la información
+            loadTicket(id.trim());
+        }
+
+        // ────────────────────────────────────────────────
+        // Función principal para cargar el ticket
+        // ────────────────────────────────────────────────
+        async function loadTicket(ticketId) {
+            try {
+                statusText.textContent = 'Cargando tu entrada...';
+                spinner.style.display = 'block';
+
+                const response = await fetch(`/api/public/ticket/${encodeURIComponent(ticketId)}`);
+                const data = await response.json();
+
+                spinner.style.display = 'none';
+
+                if (!response.ok) {
+                    throw new Error(data.error || `Error ${response.status}: No se encontró el ticket`);
+                }
+
+                statusContainer.style.display = 'none';
+
+                // Caso: pago pendiente
+                if (data.status === 'pending') {
+                    statusText.innerHTML = `
+                        <strong style="color: var(--warning); font-size: 1.4rem;">PAGO EN PROCESO</strong><br><br>
+                        Tu entrada aún no está activa.<br>
+                        Una vez confirmado el pago, recibirás el QR por whatsapp.<br>
+                        <small>(puede tardar hasta 24 hs hábiles)</small>
+                    `;
+                    statusText.style.display = 'block';
+                    statusText.style.color = 'var(--warning)';
+                    statusText.style.fontSize = '1.2rem';
+                    return;
+                }
+
+                // Caso: ticket válido o usado
+                document.getElementById('viewName').textContent = data.fullName || '—';
+                document.getElementById('viewDni').textContent = data.dni || '—';
+                document.getElementById('viewBatch').textContent = data.batchName || '—';
+
+                const statusEl = document.getElementById('viewStatus');
+                statusEl.textContent = 
+                    data.status === 'valid' ? 'VÁLIDA PARA INGRESAR' : 
+                    data.status === 'used'  ? 'YA UTILIZADA' : 
+                    (data.status || 'DESCONOCIDO').toUpperCase();
+
+                statusEl.style.color = 
+                    data.status === 'valid' ? 'var(--success)' : 
+                    data.status === 'used'  ? 'var(--danger)' : 
+                    'var(--warning)';
+
+                // Generar QR
+                new QRCode(document.getElementById("qrcode"), {
+                    text: ticketId,
+                    width: 220,
+                    height: 220,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                ticketUI.style.display = 'block';
+
+            } catch (err) {
+                console.error('Error al cargar ticket:', err);
+                spinner.style.display = 'none';
+                statusContainer.style.display = 'none';
+                errorBox.style.display = 'block';
+                errorDetail.textContent = err.message || 'No pudimos cargar la entrada. Verificá el ID o intentá más tarde.';
+            }
+        }
+    </script>
+</body>
+</html>
