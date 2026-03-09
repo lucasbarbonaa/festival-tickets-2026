@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel RRPP | Zapucay Patio Criollo</title>
+    <title>Panel RRPP | Festival 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,32 +20,94 @@
             background: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        header {
+            height: 100vh;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
+            overflow: hidden;
         }
-        h1 {
+        /* === RESPONSIVE MENU === */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .menu-toggle span {
+            display: block;
+            width: 30px;
+            height: 4px;
+            background: var(--primary);
+            margin: 6px 0;
+            transition: 0.3s;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 999;
+        }
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -260px;
+                width: 260px;
+                height: 100%;
+                transition: left 0.3s ease;
+                z-index: 1000;
+                overflow-y: auto;
+            }
+            .sidebar.active { left: 0; }
+            .main {
+                margin-left: 0 !important;
+                padding: 70px 20px 20px 20px;
+            }
+        }
+
+        .sidebar {
+            width: 260px;
+            background: var(--card);
+            border-right: 1px solid #1f2937;
+            padding: 32px 24px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            transition: left 0.3s ease;
+        }
+        .sidebar h2 {
             color: var(--primary);
             font-weight: 900;
-            margin: 0;
+            margin: 0 0 40px 0;
         }
-        .logout-btn {
-            background: var(--danger);
-            color: white;
+        .nav-btn {
+            width: 100%;
+            background: none;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            color: var(--muted);
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 1rem;
             font-weight: 600;
+            border-radius: 12px;
             cursor: pointer;
+            margin-bottom: 8px;
+            transition: 0.2s;
+        }
+        .nav-btn:hover { background: #1f2937; color: white; }
+        .nav-btn.active {
+            background: rgba(59,130,246,0.15);
+            color: var(--primary);
+        }
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
         }
         .grid {
             display: grid;
@@ -130,14 +192,6 @@
             font-weight: 900;
             border-radius: 999px;
             cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-submit:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-        .btn-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
         }
         table {
             width: 100%;
@@ -161,63 +215,46 @@
 </head>
 <body>
 
-    <div class="container">
-        <header>
+    <!-- Botón hamburguesa (solo móvil) -->
+    <button id="menuToggle" class="menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Overlay -->
+    <div id="overlay" class="overlay"></div>
+
+    <div class="sidebar">
+        <h2>RRPP</h2>
+        <button class="nav-btn active" onclick="showSection('dashboard', this)">Dashboard</button>
+        <button class="nav-btn" onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <div class="main">
+        <div id="dashboard" class="section active">
             <h1>Panel RRPP</h1>
-            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
-        </header>
-
-        <div class="grid">
-            <div class="card">
-                <div class="label">Entradas Vendidas</div>
-                <div class="big-number" id="totalTickets">0</div>
+            <div class="grid">
+                <div class="card">
+                    <div class="label">Entradas Vendidas</div>
+                    <div class="big-number" id="totalTickets">0</div>
+                </div>
+                <div class="card">
+                    <div class="label">Ingresos Generados</div>
+                    <div class="big-number" id="totalRevenue">$0</div>
+                </div>
             </div>
-            <div class="card">
-                <div class="label">Ingresos Generados</div>
-                <div class="big-number" id="totalRevenue">$0</div>
+
+            <div class="ref-box">
+                <h2>Tu Link de Referido</h2>
+                <p>Comparte este link para que tus ventas se registren automáticamente:</p>
+                <div class="ref-link" id="refLink"></div>
+                <button class="btn-copy" onclick="copyLink()">Copiar Link</button>
             </div>
+
+            <!-- Formulario de venta directa - comentado si no lo usás -->
+            <!-- <form id="sellForm"> ... </form> -->
         </div>
-
-        <div class="ref-box">
-            <h2>Tu Link de Referido</h2>
-            <p>Comparte este link para que tus ventas se registren automáticamente a tu nombre:</p>
-            <div class="ref-link" id="refLink"></div>
-            <button class="btn-copy" onclick="copyLink()">Copiar Link</button>
-        </div>
-        <!--
-        <form id="sellForm">
-            <h2>Registrar Venta Directa (Efectivo / Transferencia)</h2>
-            <label for="custName">Nombre completo del comprador</label>
-            <input type="text" id="custName" required placeholder="Ej: María López">
-
-            <label for="custDni">DNI</label>
-            <input type="text" id="custDni" required placeholder="Ej: 30123456">
-
-            <label for="custEmail">Email (opcional - para enviar entrada digital)</label>
-            <input type="email" id="custEmail" placeholder="maria@ejemplo.com">
-
-            <label for="custWhatsapp">WhatsApp (opcional)</label>
-            <input type="tel" id="custWhatsapp" placeholder="543735579785">
-
-            <label for="quantity">Cantidad de entradas</label>
-            <input type="number" id="quantity" min="1" max="10" value="1" required>
-
-            <button type="submit" class="btn-submit" id="btnSubmit">EMITIR TICKET(S) VÁLIDO(S)</button>
-        </form>
-        -->
-
-        <h2 style="margin: 48px 0 16px 0;">Tus Ventas Registradas</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>DNI</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody id="salesList"></tbody>
-        </table>
     </div>
 
     <script>
@@ -227,7 +264,6 @@
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const username = user.username || 'tuusuario';
 
-        // Construir link de referido
         const baseUrl = window.location.origin;
         document.getElementById('refLink').textContent = `${baseUrl}/?ref=${username}`;
 
@@ -244,68 +280,33 @@
 
         async function loadDashboard() {
             const data = await apiFetch('/api/rrpp/stats');
-
             document.getElementById('totalTickets').textContent = data.totalTickets || 0;
             document.getElementById('totalRevenue').textContent = 
                 `$${Math.round(data.totalRevenue || 0).toLocaleString('es-AR')}`;
-
-            const tbody = document.getElementById('salesList');
-            if (data.sales?.length > 0) {
-                tbody.innerHTML = data.sales.map(s => `
-                    <tr>
-                        <td>${s.fullName}</td>
-                        <td>${s.dni}</td>
-                        <td>${s.createdAt ? new Date(s.createdAt).toLocaleDateString('es-AR') : '—'}</td>
-                        <td class="status-${s.status}">${s.status.toUpperCase()}</td>
-                    </tr>
-                `).join('');
-            } else {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Aún no tienes ventas registradas</td></tr>';
-            }
+            // ... resto de tu código de loadDashboard ...
         }
-        
-        
-        //document.getElementById('sellForm').addEventListener('submit', async (e) => {//
-            //e.preventDefault();
-           // const btn = document.getElementById('btnSubmit');
-           // btn.disabled = true;
-            //btn.textContent = 'Procesando...';
 
-            //const payload = {
-                //fullName: document.getElementById('custName').value.trim(),
-                //dni: document.getElementById('custDni').value.trim(),
-                //email: document.getElementById('custEmail').value.trim() || null,
-                //whatsapp: document.getElementById('custWhatsapp').value.trim() || null,
-                //quantity: parseInt(document.getElementById('quantity').value) || 1
-            //};
+        // Toggle menú móvil
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('overlay');
 
-            //try {
-                //const res = await apiFetch('/api/rrpp/sell', {
-                    //method: 'POST',
-                    //body: JSON.stringify(payload)
-                //});
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+            });
 
-                //if (res.success) {
-                    //alert(`¡Venta registrada! ${payload.quantity} ticket(s) creado(s)`);
-                    //document.getElementById('sellForm').reset();
-                    //loadDashboard();
-                //} else {
-                    //alert(res.error || 'No se pudo registrar la venta');
-                //}
-            //} catch (err) {
-                //alert('Error de conexión. Intenta nuevamente.');
-            //} finally {
-                //btn.disabled = false;
-                //btn.textContent = 'EMITIR TICKET(S) VÁLIDO(S)';
-            //}
-        //});
-        
-        
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                overlay.style.display = 'none';
+            });
+        }
 
         function copyLink() {
             const link = document.getElementById('refLink').textContent;
             navigator.clipboard.writeText(link).then(() => {
-                alert('Link de referido copiado al portapapeles');
+                alert('Link copiado!');
             });
         }
 
@@ -314,7 +315,6 @@
             window.location.href = '/login.html';
         }
 
-        // Carga inicial
         window.onload = loadDashboard;
     </script>
 </body>
