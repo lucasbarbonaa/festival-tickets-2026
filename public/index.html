@@ -144,6 +144,39 @@
         }
 
         loadLanding();
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('overlay');
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+            });
+
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                overlay.style.display = 'none';
+            });
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('active');
+                        overlay.style.display = 'none';
+                    }
+            });
+             
+                
+
+    
     </script>
+    <button id="menuToggle" class="menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <div id="overlay" class="overlay"></div>
+    
 </body>
 </html>
