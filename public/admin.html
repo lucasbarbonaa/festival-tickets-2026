@@ -165,6 +165,57 @@
             margin-top: 16px;
         }
         #searchResults { margin-top: 24px; }
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .menu-toggle span {
+            display: block;
+            width: 30px;
+            height: 4px;
+            background: var(--primary);
+            margin: 6px 0;
+            transition: 0.3s;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 999;
+        }
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+        }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -260px;
+                width: 260px;
+                height: 100%;
+                transition: left 0.3s ease;
+                z-index: 1000;
+                overflow-y: auto;
+        }
+            .sidebar.active {
+                left: 0;
+        }
+            .main {
+                margin-left: 0 !important;
+                padding: 70px 20px 20px 20px;
+        }
     </style>
 </head>
 <body>
